@@ -152,6 +152,14 @@
                   (doall (map check-click-fn (:column_settings viz-settings)))))))))))
   dashboard)
 
+(defmethod assert-loaded-entity (type Pulse)
+  [pulse _]
+  (is (some? pulse))
+  (let [pulse-cards (db/select PulseCard :pulse_id (u/the-id pulse))]
+    (is (= 2 (count pulse-cards)))
+    (is (= #{ts/root-card-name "My Card"}
+           (into #{} (map (partial db/select-one-field :name Card :id) (map :card_id pulse-cards)))))))
+
 (defmethod assert-loaded-entity :default
   [entity _]
   entity)
@@ -201,7 +209,8 @@
                                          [DashboardCard (DashboardCard dashcard-id)]
                                          [DashboardCard (DashboardCard dashcard-with-click-actions)]
                                          [Card          (Card card-id-root-to-collection)]
-                                         [Card          (Card card-id-collection-to-root)]]})]
+                                         [Card          (Card card-id-collection-to-root)]
+                                         [Pulse         (Pulse pulse-id)]]})]
       (with-world-cleanup
         (load dump-dir {:on-error :continue :mode :update})
         (doseq [[model entity] (:entities fingerprint)]
